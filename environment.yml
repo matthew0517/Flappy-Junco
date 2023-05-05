@@ -1,0 +1,16 @@
+name: flappy-junco-env
+dependencies:
+- python=3.10.9 #Had to do this vecause the 3.11 isn't working with rrtplanner
+- numpy
+- Mock
+- scipy
+- cvxopt
+- pip
+- matplotlib
+- ipykernel
+- cvxopt
+- pip:
+  # works for regular pip packages
+  - gymnasium
+  - git+https://github.com/rland93/rrtplanner.git
+  - git+https://github.com/python-control/python-control.git
