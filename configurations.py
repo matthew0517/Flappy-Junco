@@ -25,5 +25,14 @@ def defaultConfig():
     config.rhoSTD = 0
     config.Restimation = np.diag([0.25, (0.25/180*np.pi)**2])
 
+    config.x_thres = 10000
+    config.z_thresHigh = 500
+    config.z_thresLow = 0
+    config.v_thres = 50
+    config.theta_thres = np.pi/6
+    config.theta_dot_thres = np.pi
+    config.gamma_thres = np.pi/6
+
+
 
     return config

@@ -10,26 +10,25 @@ class Plant():
         self.dt = config.dt 
         self.m = config.m
         self.Iyy = config.Iyy
-        self.s = config.S
+        self.S = config.S
         self.Cl_0 = config.Cl_0
         self.Cl_alpha = config.Cl_alpha
         self.K = config.K
         self.Cm_0 = config.Cm_0
-        self.Cm_alpha = config.cm_alpha_dot
+        self.Cd_0 = config.Cd_0
+        self.Cm_alpha = config.Cm_alpha
         self.Cm_alpha_dot = config.Cm_alpha_dot
         self.Cm_delta_e = config.Cm_delta_e
         self.rhoSTD = config.rhoSTD
         self.Restimation = config.Restimation
 
-        self.limits = np.array([
-            config.x_thres,
-            config.z_thresHigh,
-            config.z_thresLow,
-            config.v_thres,
-            config.theta_thres,
-            config.theta_dot_thres,
-            config.gamma_thres
-        ])
+        self.x_thres = config.x_thres
+        self.z_thresHigh = config.z_thresHigh
+        self.z_thresLow = config.z_thresLow
+        self.v_thres = config.v_thres
+        self.theta_thres = config.theta_thres
+        self.theta_dot_thres = config.theta_dot_thres
+        self.gamma_thres = config.gamma_thres
 
         self.state = None
         self.prev_action = None
@@ -53,6 +52,7 @@ class Plant():
         # Other forces
         Cd = self.Cd_0 + self.K*Cl**2
         Cm = self.Cm_0 + self.Cm_alpha*alpha + self.Cm_alpha_dot*alpha_dot + self.Cm_delta_e*delta_e
+
         D = q*self.S*Cd
         M = q*self.S*Cm
 
@@ -64,6 +64,7 @@ class Plant():
         theta_ddot = M / self.Iyy
         return np.array([[x_dot], [z_dot], [v_dot], [theta_dot], [theta_ddot], [gamma_dot]])
 
+    #Main iteration function.  Steps the physics and time dt foward.
     def step(self, action):
         #Error checking
         err_msg = f"{action!r} ({type(action)}) invalid"
@@ -132,6 +133,7 @@ class Plant():
 
         return observation, reward, terminated
 
+    #Resets the model to the entered initial state.
     def reset(self, initialState):
         self.state = initialState
         self.steps_beyond_terminated = None
