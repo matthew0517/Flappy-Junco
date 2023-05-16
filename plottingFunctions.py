@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+# Traditional system state plots
 def state_plots(traj, elvActual):
 
     def plot_state(ax,x,y,xlabel,ylabel):
@@ -31,6 +32,7 @@ def state_plots(traj, elvActual):
     fig.show()
     return
 
+# Plots for the MPC
 def state_plots_command(traj,control,xCommand, yCommand, elivCommand,elvActual, refCommand):
     def plot_state(ax,x,y,xlabel,ylabel):
         lim = 2
@@ -72,6 +74,7 @@ def state_plots_command(traj,control,xCommand, yCommand, elivCommand,elvActual, 
     fig.show()
     return
 
+# Kalman filter plots
 def est_plots(traj, trajEst):
 
     def plot_state(ax,x,y,xlabel,ylabel):

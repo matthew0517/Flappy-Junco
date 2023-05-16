@@ -39,6 +39,10 @@ class Drone():
         self.Qcontrol = config.Qcontrol
         self.Rcontrol = config.Rcontrol
 
+        self.lidar_range = config.lidar_range
+        self.lidar_angle = config.lidar_angle
+        self.lidar_res = config.lidar_res
+
     #Calculates nominal veloticty and flight path angle given elevator and thrust command
     def vGammaFromElevator(self, T, delta_e):
         alphaNom = -(self.Cm_0+self.Cm_delta_e*delta_e)/self.Cm_alpha
@@ -181,10 +185,136 @@ class Drone():
         BFull = np.array([[0], [0], [q*self.Cm_delta_e*self.S],[0]])
         return AFull, BFull
 
+    # Calculate LQR gains around initial state
     def calculateGains(self, initState):
         x, y, v, theta, theta_dot, gamma = initState
         AFull, BFull =  self.calculateCTSABMatrix(initState[2:], (4, self.elevatorFromAlpha(theta - gamma)))
         self.KFull = ctrl.lqr(AFull, BFull, self.Qcontrol, self.Rcontrol)[0]
+
+    # Calculates ray traces for lidar
+    def update_rays(self):
+
+        # filter objects to ones in lidar cone
+        def seenObjects(state,angle,beam,objects):
+
+            x,y,theta = state
+
+            # objects within range
+            idx = np.logical_and(
+                (objects[0,:]>= x),
+                (np.sqrt((objects[0,:]-x)**2+(objects[1,:]-y)**2) <= beam)
+            )
+
+            # above and below lines
+            upper = np.tan(theta+angle/2)
+            lower = np.tan(theta-angle/2)
+            ind = np.arange(len(idx))
+            for i in ind:
+                if idx[i]:
+                    dx = objects[0,i] - x
+                    if y+upper*dx < objects[1,i] or y+lower*dx > objects[1,i]:
+                        idx[i] = False
+
+            return objects[:,idx]
+
+        # intersection of line and circle
+        def intersect(p1,p2,obj):
+            x1 = p1[0] - obj[0]
+            x2 = p2[0] - obj[0]
+            y1 = p1[1] - obj[1]
+            y2 = p2[1] - obj[1]
+
+            r = obj[2]
+
+            dx = x2-x1
+            dy = y2-y1
+            dr = np.sqrt(dx*dx + dy*dy)
+            D = x1*y2 - x2*y1
+
+            cross = False
+            disc = r**2*dr**2 - D**2
+            if disc>=0:
+                cross = True
+                xp = (D*dy + np.sign(dy)*dx*np.sqrt(r**2*dr**2 - D**2)) / dr**2
+                xm = (D*dy - np.sign(dy)*dx*np.sqrt(r**2*dr**2 - D**2)) / dr**2
+                yp = (-D*dx + np.abs(dy)*np.sqrt(r**2*dr**2 - D**2)) / dr**2
+                ym = (-D*dx - np.abs(dy)*np.sqrt(r**2*dr**2 - D**2)) / dr**2
+                
+                dp = np.sqrt( (xp+obj[0])**2 + (yp+obj[1])**2 )
+                dm = np.sqrt( (xm+obj[0])**2 + (ym+obj[1])**2 )
+                if dp >= dm:
+                    p2 = (xm+obj[0],ym+obj[1])
+                else:
+                    p2 = (xp+obj[0],yp+obj[1])
+
+            return p2, cross
+
+        x,z,_,theta,_,_ = self.plant.state
+        beam = self.lidar_range
+        angle = self.lidar_angle
+        res = self.lidar_res
+        
+        rays = np.zeros((2,res))
+        objects = seenObjects([x,z,theta],angle,beam,self.objects)
+            
+        angles = np.linspace(-angle/2,angle/2,num=res)
+        for i,a in enumerate(angles):
+            x1,y1 = x,z
+            x2,y2 = x+beam*np.cos(theta+a),z+beam*np.sin(theta+a)
+            
+            # check for lidar intersection
+            for obj in objects.T:
+                p,cross = intersect((x1,y1),(x2,y2),obj)
+                if cross and (rays[0,i] == 0 or np.linalg.norm(rays[:,i]) > np.sqrt((p[0]-x1)**2+(p[1]-y1)**2)):
+                    x2,y2 = p
+                    rays[0,i] = x2-x1
+                    rays[1,i] = y2-y1
+        return rays
+
+    # Updates occupency grid
+    def update_grid(self, rays,res=1):
+        # returns the neighbors of a vertex v in G
+        def neighbors(v,G):
+            
+            # initial neighbors
+            i,j = v
+            row = np.array([i-1,i-1,i-1,i,i,i+1,i+1,i+1])
+            col = np.array([j-1,j,j+1,j-1,j+1,j-1,j,j+1])
+
+            # remove cells out of range
+            r,c = np.shape(G)
+            low = np.logical_and(row>=0, col>=0)
+            high = np.logical_and(row<=r, col<=c)
+            idx = np.logical_and(low, high)
+            row = np.delete(row,~idx)
+            col = np.delete(col,~idx)
+
+            return list(zip(row,col))
+        
+        beam = self.lidar_range
+        r,c = int(1.5*beam/res), int(3*beam/res)
+        grid = np.zeros((r,c))
+        x,y = int(c/6),int(r/2)
+        self.ogOrigin = [x,y]
+                    
+        grid[y,x] = 1
+
+        r,c = np.shape(rays)
+        for i in range(c):
+            if rays[0,i] != 0:
+                grid[(y+rays[1,i]).astype(int),(x+rays[0,i]).astype(int)] = 1
+        
+        grid[y,x] = 0
+        padded = grid.copy()
+        r,c = np.shape(grid)
+        for i in range(r):
+            for j in range(c):
+                if grid[i,j]:
+                    n = neighbors((i,j),grid)
+                    for k in n:
+                        padded[k] = 1
+    
+        return padded
 
     # Resets the state of the system and creates obstacles
     def reset(self, initState):
@@ -193,6 +323,7 @@ class Drone():
         self.droneTime = 0
         self.calculateGains(initState)
         self.delta_e_actual = 0
+        self.ogOrigin = [0,0]
 
         # Setting up obstacles
         x_pos = np.linspace(initState[0]+40,initState[0]+240,self.numObstacles)
@@ -204,6 +335,7 @@ class Drone():
 
         return self.state
     
+    # Main step of drone simulation
     def step(self, actionDrone):
         # Control inputs
         thrust, delta_eFF, stateCommand  = actionDrone
@@ -217,6 +349,9 @@ class Drone():
         observation, reward, terminated = self.plant.step(actionPlant)
         self.updateEKF(actionPlant, observation)
         self.droneTime += self.dt
+
+        rays = self.update_rays()
+        grid = self.update_grid(rays)
 
         if not terminated:
             reward = 1.0
@@ -234,9 +369,5 @@ class Drone():
             self.steps_beyond_terminated += 1
             reward = 0.0
 
-        #self.update_plot(self.axs[0],state,self.lidar,self.objects)
-        #rays = self.update_plot(self.axs[1],state,self.lidar,self.objects,beams=True)
-        #self.grid = self.update_grid(self.axs[2],self.lidar,rays)
-
-        return self.stateEstimate, reward, terminated#, rays.astype(int)
+        return self.stateEstimate, grid, reward, terminated
 

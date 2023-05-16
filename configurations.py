@@ -43,5 +43,8 @@ def defaultConfig():
     config.Qcontrol =  np.array([[10,0,0,0],[0,10, 0,0], [0,0, 0,0], [0, 0, 0, 10000]])
     config.Rcontrol =  np.array([[1]])
 
+    config.lidar_range = 50
+    config.lidar_angle = 100*np.pi/180
+    config.lidar_res = int(config.lidar_angle*180/np.pi)
 
     return config

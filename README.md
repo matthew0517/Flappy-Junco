@@ -6,7 +6,7 @@ The plant models the actual system dynamics. It recieved commands for the elevat
 
 The PlantDemo.ipynb is a notebook showing the step response and steady state response. 
 
-# Drone
+# Drone.py
 Drone contains a plant which models the physics, but it built to operate and Extended Kalman Filter and use a Linear Quadratic Regulator.  It recieves feedfoward control for throttle and elevator as well as a reference state to do feedback control around.
 
 The DroneDemo.ipynb is a notebook showing the step response, steady state response, and filter performance. 
