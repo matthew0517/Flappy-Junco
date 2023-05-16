@@ -3,19 +3,14 @@ import math
 from scipy.spatial import Delaunay
 from cvxopt import matrix, solvers
 
-def dynamics(t: int, Xn:np.array, Xref:np.array, Uref:np.array, K:np.array):
-    A = np.array([[1, 0, 1, 0], [0, 1, 0, 1], [0, 0, 1, 0], [0,0,0,1]])
-    B = np.array([[0, 0], [0, 0], [1,0], [0, 1]])
-    cov = np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
-    Xnp1 = A @ Xn + B @ (K @ (Xref - Xn) + Uref) + np.random.multivariate_normal([0, 0,0,0], cov)
-    return Xnp1, (K @ (Xref - Xn) + Uref) 
-    
+# Calculates the length of a path given as a series of points
 def pathlens(path_points):
     dist = np.zeros(path_points.shape[0])
     for i in range(path_points.shape[0]):
         dist[i] = math.dist(path_points[i, 0,:], path_points[i,1,:])
     return dist
 
+# Calculates an occupancy grid given convex constraints
 def calculateOccupancyGrid(constraints):
     yv, xv = np.meshgrid(range(0, 200), range(0, 200))
     og = np.zeros_like(xv)
@@ -30,6 +25,7 @@ def calculateOccupancyGrid(constraints):
         og[ogInner != -1] = 1
     return og
 
+# Resamples a path into a series of points that can be optimized.  These points are evenly spaced.
 def calculateReferencePoints(timeEnd, path_points):
     pathLengths = pathlens(path_points)
     vel = sum(pathLengths)/timeEnd
@@ -50,6 +46,7 @@ def calculateReferencePoints(timeEnd, path_points):
 
     return referencePoints, referenceVels
 
+# Performs a search of the occupency grid along a single direction
 def singleRay(origin, direction, og, limit = 10):
     direction[direction == 0] = 10**-8
     cord = np.array(origin)
@@ -65,12 +62,14 @@ def singleRay(origin, direction, og, limit = 10):
         traverse += len
     return np.floor(cord)
 
+# Performs a search of the occupency grid in multiple directions from a single point.
 def searchFromCord(cord, directions, og, limit = 10):
     sol = []
     for direct in directions:
         sol.append(singleRay(cord, direct, og, limit))
     return np.array(sol)
 
+# Returns the directions used in the searchFromCord function
 def generateDirections(numDirects = 8):
     angles = np.linspace(0, 2*np.pi*(numDirects-1)/(numDirects), numDirects)
     sol = []
@@ -79,7 +78,8 @@ def generateDirections(numDirects = 8):
     return np.array(sol)
 
 
-
+# The main function for this library.  Search as occupency grid around the given reference points to create a set of linearly constrained open points.  
+# These points are optimized to minimize a control effort and comply with the system dynamics.
 def localTrajOpt(A, B, tEnd, og, referencePoints, referencePointsDyn, xstart, xgoal):
     dimX = len(A)
     dimU = B.shape[1]
