@@ -103,7 +103,7 @@ def est_plots(traj, trajEst):
     time = traj[6,:]
 
     plt.close()
-    fig, axs = plt.subplots(4,2, figsize=(8,1))
+    fig, axs = plt.subplots(4,2, figsize=(10,10))
     plot_state(axs[0, 0],time,theta*180/np.pi,"Time (s)", "Theta (deg)")
     plot_state(axs[0, 1],time,thetaEst*180/np.pi,"Time (s)", "Theta Estimate (deg)")
     plot_state(axs[1, 0],time,thetaDot*180/np.pi,"Time (s)", "ThetaDot (deg/s)")
