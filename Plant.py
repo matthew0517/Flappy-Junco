@@ -69,7 +69,7 @@ class Plant():
         #Error checking
         err_msg = f"{action!r} ({type(action)}) invalid"
         assert self.state is not None, "Call reset before using step method."
-        
+
         #Extract states
         x, z, v, theta, theta_dot, gamma = self.state
         rho = np.random.normal(self.rhoNom,self.rhoSTD)
@@ -87,8 +87,7 @@ class Plant():
         self.time += self.dt
 
         #Observation model
-        observation = np.array([[v],[theta]]) + np.array([np.random.multivariate_normal([0,0], self.Restimation)]).T
-
+        observation = np.array([v,theta]) + np.array([np.random.multivariate_normal([0,0], self.Restimation)]).T
         #Check if the system is violating a limit
         terminated = bool(x < -self.x_thres
             or x > self.x_thres
@@ -102,7 +101,7 @@ class Plant():
             or theta_dot > self.theta_dot_thres
             or gamma < -self.gamma_thres
             or gamma > self.gamma_thres)
-        
+
         #Returns
         if not terminated:
             reward = 1.0

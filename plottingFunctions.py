@@ -26,7 +26,7 @@ def state_plots(traj, elvActual):
     plot_state(axs[1, 0],time,gamma*180/np.pi,"Time (s)","Gamma (deg)")
     plot_state(axs[1, 1],time,v,"Time (s)","Velocity (m/s)")
     plot_state(axs[2, 0],time,theta*180/np.pi,"Time (s)","Theta (deg)")
-    plot_state(axs[2, 1],time,elvActual,"Time (s)","Elevator actual (deg)")
+    plot_state(axs[2, 1],time,elvActual,"Time (s)","Elevator")
 
     fig.show()
     return

@@ -24,7 +24,10 @@ def defaultConfig():
     #Random values
     config.rhoSTD = 0
     config.Restimation = np.diag([0.25, (0.25/180*np.pi)**2])
+    config.Pestimation = np.eye(4)/100
+    config.Qestimation = np.diag([1/100, 0.1/180*np.pi**2, 0.1/180*np.pi**2,0.1/180*np.pi**2 ])
 
+    # Thresholds for cutting sim
     config.x_thres = 10000
     config.z_thresHigh = 500
     config.z_thresLow = 0
@@ -33,6 +36,12 @@ def defaultConfig():
     config.theta_dot_thres = np.pi
     config.gamma_thres = np.pi/6
 
+    #Obstacle settings
+    config.numObstacles = 5
+
+    #Controls settings
+    config.Qcontrol =  np.array([[10,0,0,0],[0,10, 0,0], [0,0, 0,0], [0, 0, 0, 10000]])
+    config.Rcontrol =  np.array([[1]])
 
 
     return config
