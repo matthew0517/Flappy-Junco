@@ -33,7 +33,7 @@ def state_plots(traj, elvActual):
     return
 
 # Plots for the MPC
-def state_plots_command(traj,control,xCommand, yCommand, elivCommand,elvActual, refCommand):
+def state_plots_command(traj,control,xCommand, yCommand, elivCommand,elvActual, refCommand, drone):
     def plot_state(ax,x,y,xlabel,ylabel):
         lim = 2
         ax.plot(x,y)
@@ -58,7 +58,7 @@ def state_plots_command(traj,control,xCommand, yCommand, elivCommand,elvActual, 
     fig, axs = plt.subplots(3,3, figsize=(8,8))
     plot_state(axs[0, 0],x,z,"Downrange distance (m)","Height (m)")
     plot_state(axs[0, 0],xCommand,yCommand,"Downrange distance (m)","Height (m)")
-    axs[0,0].scatter(env.objects[0,:],env.objects[1,:], color = "red" )
+    axs[0,0].scatter(drone.objects[0,:],drone.objects[1,:], color = "red" )
     axs[0,0].set_ylim((90,110))
     plot_state(axs[0, 1],time,(theta-gamma)*180/np.pi,"Time (s)","alpha (deg)")
     plot_state(axs[0, 1],time,(thetaRef-gammaRef)*180/np.pi,"Time (s)","alpha (deg)")
@@ -115,5 +115,29 @@ def est_plots(traj, trajEst):
     plot_state(axs[2, 1],time,vEst,"Time (s)", "Velocity Estimate (m/s)")
     plot_state(axs[3, 0],time,gamma*180/np.pi,"Time (s)", "Gamma (deg)")
     plot_state(axs[3, 1],time,gammaEst*180/np.pi,"Time (s)", "Gamma Estimate (deg)")
+    fig.show()
+    return
+
+# Plots for open loop trajectory planning
+def open_loop_plots(tStart, tEnd,xCommand, yCommand,thrstCommand, elivCommand, drone):
+    def plot_state(ax,x,y,xlabel,ylabel):
+        lim = 2
+        ax.plot(x,y)
+        ax.set_ylim([min(y)-lim,max(y)+lim])
+        ax.set_ylabel(ylabel)
+        ax.set_xlabel(xlabel)
+
+        return
+    time = np.array(range(tStart, tEnd))/100
+    plt.close()
+    fig, axs = plt.subplots(3,1, figsize=(8,8))
+    plot_state(axs[0],xCommand[tStart:tEnd],yCommand[tStart:tEnd],"Downrange distance (m)","Height (m)")
+    axs[0].scatter(drone.objects[0,:],drone.objects[1,:], color = "red" )
+    axs[0].set_ylim((min(yCommand[tStart:tEnd]) - 10, max(yCommand[tStart:tEnd]) + 10))
+    axs[0].set_xlim((min(xCommand[tStart:tEnd]) - 10, max(xCommand[tStart:tEnd]) + 10))
+
+    plot_state(axs[1],time,elivCommand[tStart:tEnd],"Time (s)","Elevator Command")
+    plot_state(axs[2],time,thrstCommand[tStart:tEnd],"Time (s)","Thrust Command")
+
     fig.show()
     return

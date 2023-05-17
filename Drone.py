@@ -63,7 +63,7 @@ class Drone():
         func = lambda x: thetaFromElevator(T, thetaDes,x)
         sol = sci.optimize.root_scalar(func, method='secant', x0 = 0, x1 = 1)
         return sol.root
-    
+
     #Calculates the elevator command given a desired angle of attack
     def elevatorFromAlpha(self, alpha):
         return -(self.Cm_alpha*alpha+self.Cm_0)/self.Cm_delta_e 
@@ -80,7 +80,7 @@ class Drone():
         sol = sci.optimize.root(verticalForces, x0 = [thetaGuess, airspeedGuess])
         X =sol.x      
         return [sol.x[1], sol.x[0], thetaDot, gamma]
-    
+
     # Call this function to update the estimated state of the system
     def updateEKF(self, controlIn, observation):
         v, theta, theta_dot, gamma = self.stateEstimate
@@ -334,7 +334,7 @@ class Drone():
         self.objects = np.stack((x_pos,y_pos,sizes))
 
         return self.state
-    
+
     # Main step of drone simulation
     def step(self, actionDrone):
         # Control inputs
