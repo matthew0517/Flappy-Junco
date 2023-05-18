@@ -101,10 +101,6 @@ def localTrajOpt(A, B, tEnd, og, referencePoints, referencePointsDyn, xstart, xg
         Gbar[i*numDirections:(i+1)*numDirections, i*(dimX+dimU):i*(dimX+dimU)+2] = np.flip(directs, axis = 1)
 
     # Adding positive control constraints
-    print(hbar.shape)
-    print(Gbar.shape)
-
-    print((tEnd+1)*numDirections)
     for i in range(tEnd):
         hbar[(tEnd+1)*numDirections+i, 0] = 4.4
         Gbar[(tEnd+1)*numDirections+i, i*(dimX+dimU)+ dimX+1] = -1
