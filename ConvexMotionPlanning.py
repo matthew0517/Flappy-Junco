@@ -88,8 +88,8 @@ def localTrajOpt(A, B, tEnd, og, referencePoints, referencePointsDyn, xstart, xg
     #Inequality constraints
     numDirections = 8
     directs = generateDirections(numDirections)
-    Gbar = np.zeros((numDirections*(tEnd+1), (dimX+dimU)*tEnd+dimX))
-    hbar = np.zeros((numDirections*(tEnd+1), 1))
+    Gbar = np.zeros(((numDirections+1)*(tEnd+1), (dimX+dimU)*tEnd+dimX))
+    hbar = np.zeros(((numDirections+1)*(tEnd+1), 1))
     Refs0 = list(zip(*referencePoints))[0]
     Refs1 = list(zip(*referencePoints))[1]
     RefsDyn0 = list(zip(*referencePointsDyn))[0]
@@ -99,6 +99,15 @@ def localTrajOpt(A, B, tEnd, og, referencePoints, referencePointsDyn, xstart, xg
         cords = searchFromCord([Refs0[i],Refs1[i]], directs, og, limit = 20)
         hbar[i*numDirections:(i+1)*numDirections, 0] = np.sum(directs*(cords-np.array([Refs0[i],Refs1[i]])+np.array([RefsDyn0[i],RefsDyn1[i]])), axis=1)-1*i/tEnd
         Gbar[i*numDirections:(i+1)*numDirections, i*(dimX+dimU):i*(dimX+dimU)+2] = np.flip(directs, axis = 1)
+
+    # Adding positive control constraints
+    print(hbar.shape)
+    print(Gbar.shape)
+
+    print((tEnd+1)*numDirections)
+    for i in range(tEnd):
+        hbar[(tEnd+1)*numDirections+i, 0] = 4.4
+        Gbar[(tEnd+1)*numDirections+i, i*(dimX+dimU)+ dimX+1] = -1
     hbar = hbar
 
     IA = np.eye(dimX)

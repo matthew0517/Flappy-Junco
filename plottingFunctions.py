@@ -1,5 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.colors import Normalize
+from matplotlib.collections import LineCollection
+from matplotlib import cm
 
 # Traditional system state plots
 def state_plots(traj, elvActual):
@@ -141,3 +144,17 @@ def open_loop_plots(tStart, tEnd,xCommand, yCommand,thrstCommand, elivCommand, d
 
     fig.show()
     return
+
+def plot_rrt_lines_flipped(ax, T, color_costs=True, cmap="viridis", color="tan", alpha=1.0):
+    lines = []
+    costs = []
+    for e1, e2 in T.edges():
+        lines.append((np.flip(T.nodes[e1]["pt"]), np.flip(T.nodes[e2]["pt"])))
+        costs.append(T.edges[e1, e2]["cost"])
+    if color_costs:
+        norm = Normalize(vmin=min(costs), vmax=max(costs))
+        colors = cm.get_cmap(cmap)(norm(costs))
+        lc = LineCollection(lines, colors=colors, alpha=alpha)
+    else:
+        lc = LineCollection(lines, color=color, alpha=alpha)
+    ax.add_collection(lc)
