@@ -326,7 +326,7 @@ class Drone():
         self.ogOrigin = [0,0]
 
         # Setting up obstacles
-        x_pos = np.linspace(initState[0]+40,initState[0]+240,self.numObstacles)
+        x_pos = np.linspace(initState[0]+20,initState[0]+240,self.numObstacles)
         x_pos = np.hstack((x_pos,x_pos))
         y_pos = np.random.uniform(low=initState[1]-8,high=initState[1]-2,size=self.numObstacles)
         y_pos = np.hstack((y_pos,y_pos+8))

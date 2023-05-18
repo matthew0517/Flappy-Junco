@@ -133,7 +133,7 @@ def open_loop_plots(tStart, tEnd,xCommand, yCommand,thrstCommand, elivCommand, d
         return
     time = np.array(range(tStart, tEnd))/100
     plt.close()
-    fig, axs = plt.subplots(3,1, figsize=(8,8))
+    fig, axs = plt.subplots(3,1, figsize=(10,8))
     plot_state(axs[0],xCommand[tStart:tEnd],yCommand[tStart:tEnd],"Downrange distance (m)","Height (m)")
     axs[0].scatter(drone.objects[0,:],drone.objects[1,:], color = "red" )
     axs[0].set_ylim((min(yCommand[tStart:tEnd]) - 10, max(yCommand[tStart:tEnd]) + 10))
