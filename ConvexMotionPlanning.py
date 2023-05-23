@@ -127,7 +127,7 @@ def localTrajOpt(A, B, tEnd, og, referencePoints, referencePointsDyn, xstart, xg
     Bbar[upInd:botInd,0] = xstart
 
     #Cost function
-    finalStateWeight = 100
+    finalStateWeight = 10
     Qbar = np.zeros(((dimX+dimU)*(tEnd)+dimX,(dimX+dimU)*(tEnd)+dimX))
     IU = np.eye(dimU)
     psiDotWeight = 1000*0
@@ -184,30 +184,38 @@ def TrajGen(drone, grid, thrustCommand, elivCommand, xCommand, yCommand, refStat
     path = rrts.route2gv(T, gv)
     path_pts = rrts.vertices_as_ndarray(T, path)
     tEnd = 450
+    timeMulti = 10
 
-    referencePoints, referenceVels = calculateReferencePoints(tEnd+1, path_pts)
-    referencePointsDyn, referenceVelsDyn = calculateReferencePoints(tEnd+1, path_pts)
+
+    referencePoints, referenceVels = calculateReferencePoints(math.floor(tEnd/timeMulti)+1, path_pts)
+    referencePointsDyn, referenceVelsDyn = calculateReferencePoints(math.floor(tEnd/timeMulti)+1, path_pts)
     for i in range(len(referencePointsDyn)):
-        referencePointsDyn[i][0] = referencePointsDyn[i][0]-refStates[0]*np.sin(refStates[3])*i*drone.dt-offset
-        referencePointsDyn[i][1] = referencePointsDyn[i][1]-refStates[0]*np.cos(refStates[3])*i*drone.dt-orignX
+        referencePointsDyn[i][0] = referencePointsDyn[i][0]-refStates[0]*np.sin(refStates[3])*i*drone.dt*timeMulti-offset
+        referencePointsDyn[i][1] = referencePointsDyn[i][1]-refStates[0]*np.cos(refStates[3])*i*drone.dt*timeMulti-orignX
     Acts, Bcts = drone.calculateCTSABMatrix(refStates, controlRef)
     Aopt = np.eye(Acts.shape[0]+2)
     #A = Aopt + env.calculateANumerical(stateRefFull, controlRef, env.rhoNom, step=10**-5)*env.dt
-    Aopt[0, 2] = drone.dt
-    Aopt[1, 5] = refStates[0]*drone.dt
-    Aopt[2:,2:] = Aopt[2:,2:]+Acts*drone.dt
+    Aopt[0, 2] = drone.dt*timeMulti
+    Aopt[1, 5] = refStates[0]*drone.dt*timeMulti
+    Aopt[2:,2:] = Aopt[2:,2:]+Acts*drone.dt*timeMulti
     Bopt = np.zeros([6,2])
-    Bopt[2:,0:1] = Bcts*drone.dt
+    Bopt[2:,0:1] = Bcts*drone.dt*timeMulti
     alphaEst = refStates[1] - refStates[3]
-    Bopt[2, 1] = 1/drone.m*np.cos(alphaEst)*drone.dt
-    Bopt[5, 1] = 1/drone.m*np.sin(alphaEst)/refStates[0]*drone.dt
-    xstart = np.concatenate(([0.,0.], np.array(drone.stateEstimate) - np.array(refStates)))
+    Bopt[2, 1] = 1/drone.m*np.cos(alphaEst)*drone.dt*timeMulti
+    Bopt[5, 1] = 1/drone.m*np.sin(alphaEst)/refStates[0]*drone.dt*timeMulti
+    xstart = np.concatenate(([0.,0.], np.array(drone.plant.state[2:]) - np.array(refStates)))
     xgoal = np.concatenate(([0.,50 - drone.plant.state[1]], [0.,0.,0.,0.]))
-    xsol, usol = localTrajOpt(Aopt, Bopt, tEnd, grid[midpoint-offset:, 0:80], referencePoints, referencePointsDyn, xstart, xgoal)
-    for i in range(np.min((tEnd, iterations-iter))):
-        thrustCommand[iter+i] = usol[i][1] + thrustCommandVal 
-        elivCommand[iter + i] = usol[i][0] + elivCommandRef
-        xCommand[iter+i] = xsol[i][0]+refStates[0]*np.cos(0)*i*drone.dt+drone.plant.state[0]
-        yCommand[iter+i] = xsol[i][1]+refStates[0]*np.sin(0)*i*drone.dt+drone.plant.state[1]
-        refCommand[iter+i, :] = xsol[i][2:6].T + np.array(refStates)
+    xsol, usol = localTrajOpt(Aopt, Bopt, math.floor(tEnd/timeMulti), grid[midpoint-offset:, 0:80], referencePoints, referencePointsDyn, xstart, xgoal)
+    for i in range(np.min((tEnd-timeMulti-1, iterations-iter))):
+        iDrop = math.floor(i/timeMulti)
+        iNext = iDrop+1
+        ifrac1 = (timeMulti - i%timeMulti)/timeMulti
+        ifrac2 = (i%timeMulti)/timeMulti
+
+        thrustCommand[iter+i] = ifrac1*usol[iDrop][1] + ifrac2*usol[iNext][1]  + thrustCommandVal 
+        elivCommand[iter + i] = ifrac1*usol[iDrop][0] + ifrac2*usol[iNext][0] + elivCommandRef
+        xCommand[iter+i] = ifrac1*xsol[iDrop][0] + ifrac2*xsol[iNext][0] +refStates[0]*np.cos(0)*i*drone.dt+drone.plant.state[0]
+        yCommand[iter+i] = ifrac1*xsol[iDrop][1] + ifrac2*xsol[iNext][1] + refStates[0]*np.sin(0)*i*drone.dt+drone.plant.state[1]
+        refCommand[iter+i, :] = ifrac1*xsol[iDrop][2:6].T + ifrac2*xsol[iNext][2:6].T + np.array(refStates)
+
     return thrustCommand, elivCommand, xCommand, yCommand, refCommand
