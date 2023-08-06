@@ -32,16 +32,16 @@ def defaultConfig():
     config.z_thresHigh = 500
     config.z_thresLow = 0
     config.v_thres = 50
-    config.theta_thres = np.pi/6
-    config.theta_dot_thres = np.pi
-    config.gamma_thres = np.pi/6
+    config.theta_thres = np.pi/6*2
+    config.theta_dot_thres = np.pi*10
+    config.gamma_thres = np.pi/4
 
     #Obstacle settings
-    config.numObstacles = 5
+    config.numObstacles = 0
 
     #Controls settings
     config.Qcontrol =  np.array([[10,0,0,0],[0,10, 0,0], [0,0, 0,0], [0, 0, 0, 10000]])
-    config.Rcontrol =  np.array([[1]])
+    config.Rcontrol =  np.array([[5]])
 
     config.lidar_range = 50
     config.lidar_angle = 100*np.pi/180

@@ -58,21 +58,22 @@ def state_plots_command(traj,control,xCommand, yCommand, elivCommand,elvActual, 
     time = traj[6,:]
 
     plt.close()
-    fig, axs = plt.subplots(3,2, figsize=(14,10))
-    plot_state(axs[0, 0],x,z,"Downrange distance (m)","Height (m)")
+    fig, axs = plt.subplots(3,3, figsize=(14,10))
     plot_state(axs[0, 0],xCommand,yCommand,"Downrange distance (m)","Height (m)")
+    plot_state(axs[0, 0],x,z,"Downrange distance (m)","Height (m)")
     axs[0,0].scatter(drone.objects[0,:],drone.objects[1,:], color = "red" )
-    axs[0,0].set_ylim((40,60))
-    plot_state(axs[0, 1],time,(theta-gamma)*180/np.pi,"Time (s)","alpha (deg)")
+    axs[0,0].set_ylim((30, 70))
+    print(gamma.shape)
     plot_state(axs[0, 1],time,(thetaRef-gammaRef)*180/np.pi,"Time (s)","alpha (deg)")
-    #plot_state(axs[0, 2],time,elvActual,"Time (s)","Elevator Actual")
-    #plot_state(axs[0, 2],time,elivCommand,"Time (s)","Elevator Command")
-    plot_state(axs[1, 0],time,gamma*180/np.pi,"Time (s)","Gamma (deg)")
+    plot_state(axs[0, 1],time,(theta-gamma)*180/np.pi,"Time (s)","alpha (deg)")
+    plot_state(axs[0, 2],time,elivCommand,"Time (s)","Elevator Command")
+    plot_state(axs[0, 2],time,elvActual,"Time (s)","Elevator Actual")
     plot_state(axs[1, 0],time,gammaRef*180/np.pi,"Time (s)","Gamma (deg)")
-    plot_state(axs[1, 1],time,v,"Time (s)","Velocity (m/s)")
+    plot_state(axs[1, 0],time,gamma*180/np.pi,"Time (s)","Gamma (deg)")
     plot_state(axs[1, 1],time,vRef,"Time (s)","Velocity (m/s)")
-    plot_state(axs[2, 0],time,theta*180/np.pi,"Time (s)","Theta (deg)")
+    plot_state(axs[1, 1],time,v,"Time (s)","Velocity (m/s)")
     plot_state(axs[2, 0],time,thetaRef*180/np.pi,"Time (s)","Theta (deg)")
+    plot_state(axs[2, 0],time,theta*180/np.pi,"Time (s)","Theta (deg)")
     plot_state(axs[2, 1],time,control,"Time (s)","Thrust Command (N)")
     fig.show()
     return
@@ -158,3 +159,28 @@ def plot_rrt_lines_flipped(ax, T, color_costs=True, cmap="viridis", color="tan",
     else:
         lc = LineCollection(lines, color=color, alpha=alpha)
     ax.add_collection(lc)
+
+def tree_plot_2d_vectors(vectors, og: np.ndarray, cmap: str = "Greys", vmin=0, vmax=1):
+    fig, ax = plt.subplots()
+
+    for vector in vectors:
+        x = vector[0]
+        y = vector[1]
+        index = round(vector[2])
+
+        if index > -1 and index < len(vectors):
+            target_vector = vectors[index]
+            target_x = target_vector[0]
+            target_y = target_vector[1]
+
+            ax.plot([x, target_x], [y, target_y], 'b-')
+        ax.scatter(x, y, color='royalblue')
+
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_title('RRT Tree plot')
+    ax.grid(True)
+
+    norm = Normalize(vmin=vmin, vmax=vmax)
+    ax.imshow(og.T, cmap=cmap, norm=norm, origin="lower", interpolation=None)
+    plt.show()

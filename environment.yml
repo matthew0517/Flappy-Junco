@@ -1,6 +1,10 @@
 name: flappy-junco-env
+channels:
+  - defaults
+  - conda-forge 
 dependencies:
 - python=3.10.9 #Had to do this vecause the 3.11 isn't working with rrtplanner
+- cython 
 - numpy
 - Mock
 - scipy
@@ -11,6 +15,7 @@ dependencies:
 - cvxopt
 - pip:
   # works for regular pip packages
+ # - Mosek
   - gymnasium
   - git+https://github.com/rland93/rrtplanner.git
   - git+https://github.com/python-control/python-control.git

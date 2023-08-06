@@ -174,15 +174,15 @@ class Drone():
         pf2pthetaDot = 1
         pf2pgamma = 0
         pf3pv = pMpv/self.Iyy
-        pf3ptheta = pMptheta/self.Iyy
+        pf3ptheta = pMptheta/self.Iyy + q*self.S*self.Cm_alpha_dot/self.Iyy*(pf2ptheta-pf4ptheta)
         pf3pthetaDot = 0
-        pf3pgamma = pMpgamma/self.Iyy
+        pf3pgamma = pMpgamma/self.Iyy + q*self.S*self.Cm_alpha_dot/self.Iyy*(pf2pgamma-pf4pgamma)
         pf4pv = pLpv/(self.m*v)
         pf4pthetaDot = 0
 
         AFull = np.array([[pf1pv, pf1ptheta, pf1pthetaDot, pf1pgamma],[pf2pv, pf2ptheta, pf2pthetaDot, pf2pgamma],
                       [pf3pv, pf3ptheta, pf3pthetaDot, pf3pgamma],[pf4pv, pf4ptheta, pf4pthetaDot, pf4pgamma]])
-        BFull = np.array([[0], [0], [q*self.Cm_delta_e*self.S],[0]])
+        BFull = np.array([[0], [0], [q*self.Cm_delta_e*self.S/self.Iyy],[0]])
         return AFull, BFull
 
     # Calculate LQR gains around initial state
@@ -326,11 +326,11 @@ class Drone():
         self.ogOrigin = [0,0]
 
         # Setting up obstacles
-        x_pos = np.linspace(initState[0]+30,initState[0]+240,self.numObstacles)
-        x_pos = np.hstack((x_pos,x_pos))
-        y_pos = np.random.uniform(low=initState[1]-8,high=initState[1]-2,size=self.numObstacles)
-        y_pos = np.hstack((y_pos,y_pos+8))
-        sizes = np.random.uniform(low=1,high=1,size=self.numObstacles*2)
+        x_pos = np.linspace(initState[0]+25,initState[0]+240,self.numObstacles)
+        #x_pos = np.hstack((x_pos,x_pos))
+        y_pos = np.random.uniform(low=initState[1]-10,high=initState[1]+10,size=self.numObstacles)
+        #y_pos = np.hstack((y_pos,y_pos+8))
+        sizes = np.random.uniform(low=1,high=1,size=self.numObstacles)
         self.objects = np.stack((x_pos,y_pos,sizes))
 
         return self.state
@@ -352,6 +352,13 @@ class Drone():
 
         rays = self.update_rays()
         grid = self.update_grid(rays)
+
+        for obstacleI in range(self.objects.shape[1]):
+            xtrue = self.plant.state[0]
+            ytrue = self.plant.state[1]
+            if ((self.objects[0, obstacleI] - xtrue)**2 + (self.objects[1, obstacleI] - ytrue)**2) < self.objects[2, obstacleI]**2:
+                terminated = True
+                print("Obstacle Collision")
 
         if not terminated:
             reward = 1.0
